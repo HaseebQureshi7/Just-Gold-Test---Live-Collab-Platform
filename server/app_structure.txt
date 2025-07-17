@@ -1,0 +1,53 @@
+/project-root
+├── src/
+│   ├── application/              # Application logic: use cases, services, DTOs.
+│   │   ├── useCases/             # Orchestrate business logic.
+│   │   │   ├── CreateRoom.ts
+│   │   │   ├── JoinRoom.ts
+│   │   ├── repositories
+│   │   ├── services/             # Business services coordinating multiple use cases.
+│   │   │   └── RoomService.ts
+│   │   └── dtos/                 # Data Transfer Objects for requests/responses.
+│   │       └── RoomDTO.ts
+│   │
+│   ├── domain/                 # Domain layer with core business entities and interfaces.
+│   │   ├── entities/           # Domain entities that encapsulate business rules.
+│   │   │   ├── Room.ts
+│   │   │   └── User.ts
+│   │   ├── interfaces/         # Abstractions for repositories, etc.
+│   │   │   └── IRoomRepository.ts
+│   │   └── valueObjects/       # Immutable objects representing domain concepts.
+│   │       └── RoomId.ts
+│   │
+│   ├── infrastructure/         # External dependencies and implementations.
+│   │   ├── config/             # App configuration and environment setups.
+│   │   │   └── index.ts
+│   │   ├── database/           # Database integration using Prisma.
+│   │   │   └── prisma/
+│   │   │       ├── schema.prisma
+│   │   │       └── client.ts   # Instantiate and export Prisma Client.
+│   │   ├── repositories/       # Repository implementations that adhere to domain interfaces.
+│   │   │   └── RoomRepository.ts
+│   │   └── socket/             # Socket server configuration and handlers.
+│   │       └── socketHandler.ts
+│   │
+│   ├── presentation/           # Interface layer (HTTP controllers, routes, middlewares).
+│   │   ├── controllers/        # Express controllers handling HTTP requests.
+│   │   │   └── RoomController.ts
+│   │   ├── routes/             # API route definitions.
+│   │   │   └── roomRoutes.ts
+│   │   └── middlewares/        # Error handling, logging, and other middlewares.
+│   │       └── errorHandler.ts
+│   │
+│   ├── shared/                 # Shared utilities, constants, and type definitions.
+│   │   ├── constants.ts
+│   │   ├── utils.ts
+│   │   └── types.ts
+│   │
+│   ├── server.ts               # Set up Express server and integrate Socket.IO.
+│   └── index.ts                # Entry point (bootstraps the app).
+│
+├── .env                      # Environment variables.
+├── package.json
+├── tsconfig.json
+└── README.md
