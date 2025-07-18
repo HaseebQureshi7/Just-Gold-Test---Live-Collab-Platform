@@ -6,7 +6,6 @@ import LoadingPage from "../LoadingPage/LoadingPage";
 import NoRoomFound from "./NoRoomFound";
 import Button from "../../components/ui/Button";
 import {
-  Confetti,
   CornersOut,
   Hand,
   LinkSimple,
