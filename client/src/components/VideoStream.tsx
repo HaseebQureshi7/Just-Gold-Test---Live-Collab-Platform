@@ -1,6 +1,6 @@
 import { ColFlex, RowFlex } from "../styles/utils/flexUtils";
 import colors from "../styles/colors";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SpeakerHigh, SpeakerSlash } from "@phosphor-icons/react";
 import Button from "./ui/Button";
 import Typography from "./ui/Typography";
@@ -12,6 +12,7 @@ interface IVideoStream {
   isMuted?: boolean;
   isCameraOn?: boolean;
   fullWidthMode: boolean;
+  isLocalUser?: boolean; // Add isLocalUser prop
 }
 
 function VideoStream({
@@ -19,54 +20,84 @@ function VideoStream({
   userName,
   isMuted = false,
   isCameraOn = true,
-  fullWidthMode
+  fullWidthMode,
+  isLocalUser = false, // Default to false
 }: IVideoStream) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const {category} = useResponsive()
+  const { category } = useResponsive();
+
+  // State to manage screen sharing
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
 
   // Always set the stream when it changes
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
+    if (videoRef.current) {
+      videoRef.current.srcObject = screenStream || stream;
     }
-  }, [stream]);
+  }, [stream, screenStream]);
 
-// When isCameraOn changes to true, reattach the stream and wait for metadata before calling play()
-useEffect(() => {
-  if (isCameraOn && videoRef.current && stream) {
-    videoRef.current.srcObject = stream;
-    const videoEl = videoRef.current;
-    const playVideo = () => {
-      videoEl.play().catch((err) => console.error("Error playing video:", err));
-    };
-    videoEl.addEventListener("loadedmetadata", playVideo);
-    return () => {
-      videoEl.removeEventListener("loadedmetadata", playVideo);
-    };
-  }
-}, [isCameraOn, stream]);
+  // When isCameraOn changes to true, reattach the stream and wait for metadata before calling play()
+  useEffect(() => {
+    if (isCameraOn && videoRef.current && (screenStream || stream)) {
+      videoRef.current.srcObject = screenStream || stream;
+      const videoEl = videoRef.current;
+      const playVideo = () => {
+        videoEl.play().catch((err) => console.error("Error playing video:", err));
+      };
+      videoEl.addEventListener("loadedmetadata", playVideo);
+      return () => {
+        videoEl.removeEventListener("loadedmetadata", playVideo);
+      };
+    }
+  }, [isCameraOn, stream, screenStream]);
 
+  // Handle share screen
+  const handleShareScreen = async () => {
+    try {
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      setScreenStream(displayStream);
 
-  const isSmallDevice = category == "md" || category == "xs"
+      // When user stops sharing, revert to camera
+      displayStream.getVideoTracks()[0].addEventListener("ended", () => {
+        setScreenStream(null);
+      });
+    } catch (err) {
+      console.error("Screen share error:", err);
+    }
+  };
+
+  // Stop screen sharing
+  const handleStopShare = () => {
+    if (screenStream) {
+      screenStream.getTracks().forEach((track) => track.stop());
+      setScreenStream(null);
+    }
+  };
+
+  const isSmallDevice = category == "md" || category == "xs";
 
   return (
     <div
       className="fade-in-fast"
-      style={isSmallDevice ? {
-        ...ColFlex,
-        width: fullWidthMode ? "45%" : '50%',
-        aspectRatio: fullWidthMode ? 1.25 :2,
-        borderRadius: "12.5px",
-        backgroundColor: colors.warning,
-        position: "relative",
-      } : {
-        ...ColFlex,
-        width: fullWidthMode ? "30%" : '100%',
-        aspectRatio: fullWidthMode ? 1.25 :2,
-        borderRadius: "12.5px",
-        backgroundColor: colors.warning,
-        position: "relative",
-      }}
+      style={
+        isSmallDevice
+          ? {
+              ...ColFlex,
+              width: fullWidthMode ? "45%" : "50%",
+              aspectRatio: fullWidthMode ? 1.25 : 2,
+              borderRadius: "12.5px",
+              backgroundColor: colors.warning,
+              position: "relative",
+            }
+          : {
+              ...ColFlex,
+              width: fullWidthMode ? "30%" : "100%",
+              aspectRatio: fullWidthMode ? 1.25 : 2,
+              borderRadius: "12.5px",
+              backgroundColor: colors.warning,
+              position: "relative",
+            }
+      }
     >
       {isCameraOn ? (
         <>
@@ -87,6 +118,14 @@ useEffect(() => {
                 {userName}
               </Typography>
             </Button>
+            {/* Share Screen Button */}
+            {isLocalUser && (
+              screenStream ? (
+                <Button onClick={handleStopShare}>Stop Sharing</Button>
+              ) : (
+                <Button onClick={handleShareScreen}>Share Screen</Button>
+              )
+            )}
           </div>
 
           {/* Video element */}
@@ -95,7 +134,12 @@ useEffect(() => {
             autoPlay
             playsInline
             muted={isMuted} // Prevents local feedback
-            style={{ width: "100%", height: "100%", borderRadius: "12.5px", objectFit:"cover", }}
+            style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: "12.5px",
+              objectFit: "cover",
+            }}
           />
         </>
       ) : (
